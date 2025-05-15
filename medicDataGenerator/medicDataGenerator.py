@@ -8,7 +8,7 @@ fake = Faker('es_ES')
 
 # Proporciones reales de tipos de sangre en Colombia (en porcentaje)
 tipos_sangre = ['O+', 'A+', 'B+', 'AB+', 'O-', 'A-', 'B-', 'AB-']
-probabilidades = [0.62, 0.27, 0.07, 0.02, 0.015, 0.007, 0.004, 0.002]
+probabilidades = [0.56, 0.26, 0.07, 0.02, 0.05, 0.03, 0.007, 0.003]
 
 # Peso promedio (kg) por rango de edad y género para Colombia (aproximados)
 peso_por_edad_genero = {
@@ -42,59 +42,130 @@ def peso_según_edad_genero(edad, genero):
     return max(1, round(np.random.normal(70, 15), 1))
 
 def generar_signos_vitales(edad, peso):
-    # Temperatura normal (ligera variación)
-    temp = round(random.uniform(36.1, 37.2), 1)
+    temp = round(random.uniform(35.1, 39.2), 1)
+
+    # Factores de ajuste por temperatura
+    aumento_temp = temp > 37.5
+    baja_temp = temp < 36.0
 
     # Frecuencia cardíaca (lpm) según edad
     if edad <= 1:
-        fc = random.randint(100, 160)
+        fc_base = (100, 160)
     elif edad <= 5:
-        fc = random.randint(90, 140)
+        fc_base = (90, 140)
     elif edad <= 12:
-        fc = random.randint(70, 120)
-    elif edad <= 18:
-        fc = random.randint(60, 100)
+        fc_base = (70, 120)
     else:
-        fc = random.randint(60, 100)
+        fc_base = (60, 100)
+
+    fc_min, fc_max = fc_base
+    if aumento_temp:
+        fc = random.randint(fc_min + 10, fc_max + 10)
+    elif baja_temp:
+        fc = random.randint(fc_min - 10, fc_max - 10)
+    else:
+        fc = random.randint(fc_min, fc_max)
 
     # Frecuencia respiratoria (rpm) según edad
     if edad <= 1:
-        fr = random.randint(30, 60)
+        fr_base = (30, 60)
     elif edad <= 5:
-        fr = random.randint(20, 40)
+        fr_base = (20, 40)
     elif edad <= 12:
-        fr = random.randint(18, 30)
+        fr_base = (18, 30)
     else:
-        fr = random.randint(12, 20)
+        fr_base = (12, 20)
+
+    fr_min, fr_max = fr_base
+    if aumento_temp:
+        fr = random.randint(fr_min + 5, fr_max + 5)
+    elif baja_temp:
+        fr = random.randint(fr_min - 5, fr_max - 5)
+    else:
+        fr = random.randint(fr_min, fr_max)
 
     # Presión arterial (mmHg) ajustada por edad
     if edad < 18:
-        sistolica = random.randint(90, 110)
-        diastolica = random.randint(60, 70)
+        sis_base = (90, 110)
+        dias_base = (60, 70)
     elif edad < 40:
-        sistolica = random.randint(110, 130)
-        diastolica = random.randint(70, 85)
+        sis_base = (110, 130)
+        dias_base = (70, 85)
     else:
-        sistolica = random.randint(120, 150)
-        diastolica = random.randint(75, 95)
+        sis_base = (120, 150)
+        dias_base = (75, 95)
+
+    sis_min, sis_max = sis_base
+    dias_min, dias_max = dias_base
+
+    if aumento_temp:
+        sistolica = random.randint(sis_min + 5, sis_max + 5)
+        diastolica = random.randint(dias_min + 3, dias_max + 3)
+    elif baja_temp:
+        sistolica = random.randint(sis_min - 5, sis_max - 5)
+        diastolica = random.randint(dias_min - 3, dias_max - 3)
+    else:
+        sistolica = random.randint(sis_min, sis_max)
+        diastolica = random.randint(dias_min, dias_max)
 
     return temp, (sistolica, diastolica), fc, fr
 
-def evaluar_frecuencia_cardiaca(fc):
-    if fc < 60:
-        return "Bradicardia"
-    elif fc > 100:
-        return "Taquicardia"
-    else:
-        return "Normal"
 
-def evaluar_presion_arterial(sistolica, diastolica):
-    if sistolica < 90 or diastolica < 60:
-        return "Hipotensión"
-    elif sistolica > 140 or diastolica > 90:
-        return "Hipertensión"
+def evaluar_frecuencia_cardiaca(fc, edad):
+    if edad <= 1:
+        if fc < 100:
+            return "Bradicardia"
+        elif fc > 160:
+            return "Taquicardia"
+    elif edad <= 5:
+        if fc < 90:
+            return "Bradicardia"
+        elif fc > 140:
+            return "Taquicardia"
+    elif edad <= 12:
+        if fc < 70:
+            return "Bradicardia"
+        elif fc > 120:
+            return "Taquicardia"
+    elif edad <= 18:
+        if fc < 60:
+            return "Bradicardia"
+        elif fc > 100:
+            return "Taquicardia"
     else:
-        return "Normal"
+        if fc < 60:
+            return "Bradicardia"
+        elif fc > 100:
+            return "Taquicardia"
+    return "Normal"
+
+def evaluar_presion_arterial(sistolica, diastolica, edad):
+    if edad < 1:
+        if sistolica < 70 or diastolica < 50:
+            return "Hipotensión"
+        elif sistolica > 100 or diastolica > 65:
+            return "Hipertensión"
+    elif edad <= 5:
+        if sistolica < 80 or diastolica < 55:
+            return "Hipotensión"
+        elif sistolica > 110 or diastolica > 75:
+            return "Hipertensión"
+    elif edad <= 12:
+        if sistolica < 90 or diastolica < 60:
+            return "Hipotensión"
+        elif sistolica > 120 or diastolica > 80:
+            return "Hipertensión"
+    elif edad <= 18:
+        if sistolica < 100 or diastolica < 65:
+            return "Hipotensión"
+        elif sistolica > 130 or diastolica > 85:
+            return "Hipertensión"
+    else:
+        if sistolica < 90 or diastolica < 60:
+            return "Hipotensión"
+        elif sistolica > 140 or diastolica > 90:
+            return "Hipertensión"
+    return "Normal"
 
 def evaluar_temperatura(temp):
     if temp < 36.0:
@@ -109,33 +180,67 @@ def generar_edad():
 
 def asignar_fumador(edad, genero):
     prob = 0
-
-    if edad < 14:
+    if edad < 12:
         return "No"
 
     if genero == 'Masculino':
-        if edad < 18:
-            prob = 0.01
-        elif edad <= 24:
-            prob = 0.15
-        elif edad <= 34:
-            prob = 0.20
-        elif edad <= 49:
-            prob = 0.17
-        else:
-            prob = 0.10
+        # Ajustamos las probabilidades para que el promedio total quede cercano a 16.9%
+        if 12 <= edad <= 24:
+            prob = 0.186  # 18.6%
+        elif 25 <= edad <= 44:
+            prob = 0.132  # 13.2%
+        elif 45 <= edad <= 64:
+            prob = 0.117  # 11.7%
+        else:  # 65+
+            prob = 0.062  # 6.2%
+
     elif genero == 'Femenino':
-        if edad < 18:
-            prob = 0.01
-        elif edad <= 24:
-            prob = 0.08
-        elif edad <= 34:
-            prob = 0.10
-        elif edad <= 49:
-            prob = 0.07
-        else:
+        # Ajustamos similar para mujeres con promedio 7.6%, se escalan proporcionalmente
+        if 12 <= edad <= 24:
+            prob = 0.08  # un poco menor que hombres, proporción basada en dato general
+        elif 25 <= edad <= 44:
+            prob = 0.055
+        elif 45 <= edad <= 64:
             prob = 0.05
+        else:  # 65+
+            prob = 0.03
     return "Sí" if random.random() < prob else "No"
+
+def asignar_consumo_alcohol(edad, genero):
+    """
+    Asigna si una persona consume alcohol, basándose en estadísticas reales por edad y género en Colombia.
+    La probabilidad fue ajustada a partir de prevalencias por edad y género.
+    """
+    probabilidad = 0.0
+
+    if genero == "Masculino":
+        if 12 <= edad <= 17:
+            probabilidad = 0.35  # Ligeramente más alta que la media escolar (72% de hombres)
+        elif 18 <= edad <= 24:
+            probabilidad = 0.60
+        elif 25 <= edad <= 44:
+            probabilidad = 0.70
+        elif 45 <= edad <= 64:
+            probabilidad = 0.65
+        elif edad >= 65:
+            probabilidad = 0.45
+        else:
+            probabilidad = 0.01  # Muy baja si menor de 12
+    elif genero == "Femenino":
+        if 12 <= edad <= 17:
+            probabilidad = 0.29  # Más baja en mujeres escolares
+        elif 18 <= edad <= 24:
+            probabilidad = 0.48
+        elif 25 <= edad <= 44:
+            probabilidad = 0.58
+        elif 45 <= edad <= 64:
+            probabilidad = 0.52
+        elif edad >= 65:
+            probabilidad = 0.35
+        else:
+            probabilidad = 0.01
+
+    return "Sí" if random.random() < probabilidad else "No"
 
 def generar_datos_pacientes(num=100):
     datos = []
@@ -145,7 +250,7 @@ def generar_datos_pacientes(num=100):
         edad = generar_edad()
 
         if genero == "Masculino":
-            altura = round(np.random.normal(170, 7), 1)
+            altura = round(np.random.normal(171, 7), 1)
             nombre = fake.first_name_male()
         else:
             altura = round(np.random.normal(158, 6), 1)
@@ -157,8 +262,7 @@ def generar_datos_pacientes(num=100):
         tipo_visita = random.choice(["Consulta general", "Control", "Urgencia", "Especialista"])
         proxima_cita = fecha_consulta + timedelta(days=random.randint(7, 60))
 
-        temp, presion, fc, fr = generar_signos_vitales(edad, peso)
-
+        temp, (sis, dias), fc, fr = generar_signos_vitales(edad, peso)
         tipo_sangre = random.choices(tipos_sangre, probabilidades)[0]
 
         fumador = asignar_fumador(edad, genero)
@@ -173,14 +277,15 @@ def generar_datos_pacientes(num=100):
             "Peso (kg)": peso,
             "Temperatura (°C)": temp,
             "Evaluación Temperatura": evaluar_temperatura(temp),
-            "Presión Sistólica": presion[0],
-            "Presión Diastólica": presion[1],
-            "Evaluación Presión": evaluar_presion_arterial(*presion),
+            "Presión Sistólica": sis,
+            "Presión Diastólica": dias,
+            "Evaluación Presión": evaluar_presion_arterial(sis, dias, edad),
             "Frecuencia Cardíaca (lpm)": fc,
-            "Evaluación FC": evaluar_frecuencia_cardiaca(fc),
+            "Evaluación FC": evaluar_frecuencia_cardiaca(fc, edad),
             "Frecuencia Respiratoria (rpm)": fr,
             "Tipo de Sangre": tipo_sangre,
             "Fumador": fumador,
+            "Consume Alcohol": asignar_consumo_alcohol(edad, genero),
             "ID Consulta": f"C{i:05d}",
             "Fecha de Consulta": fecha_consulta.strftime('%Y-%m-%d'),
             "Tipo de Visita": tipo_visita,
@@ -199,6 +304,6 @@ def guardar_en_csv(datos, nombre_archivo="consultas_pacientes.csv"):
         escritor.writerows(datos)
 
 # Ejecutar
-datos_pacientes = generar_datos_pacientes(100)
+datos_pacientes = generar_datos_pacientes(1000000)
 guardar_en_csv(datos_pacientes)
 print("Archivo CSV generado exitosamente con edad, peso y altura relacionados.")

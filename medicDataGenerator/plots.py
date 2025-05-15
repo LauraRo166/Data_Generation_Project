@@ -92,15 +92,43 @@ variables = [
     "Presión Sistólica",
     "Frecuencia Respiratoria (rpm)"
 ]
-def graficar_variable(var):
+def categorizar_edad(edad):
+    if edad <= 11:
+        return "Niños (0-11)"
+    elif edad <= 18:
+        return "Jóvenes (12-18)"
+    elif edad <= 40:
+        return "Adultos jóvenes (19-40)"
+    elif edad <= 65:
+        return "Adultos (41-65)"
+    else:
+        return "Mayores (66+)"
+df["Rango de Edad"] = df["Edad"].apply(categorizar_edad)
+def graficar_variable_por_rango(var):
     plt.figure(figsize=(10, 6))
-    stats = df.groupby('Edad')[var].mean().reset_index()
-    sns.barplot(x='Edad', y=var, data=stats, palette="Set2")
-    plt.title(f'Media y desviación estándar de {var} por Edad')
+    stats = df.groupby('Rango de Edad')[var].mean().reset_index()
+    sns.barplot(x='Rango de Edad', y=var, data=stats, palette="Set2", order=[
+        "Niños (0-11)", "Jóvenes (12-18)", "Adultos jóvenes (19-40)",
+        "Adultos (41-65)", "Mayores (66+)"
+    ])
+    plt.title(f'Media de {var} por Rango de Edad')
     plt.ylabel(var)
-    plt.xlabel('Edad')
+    plt.xlabel('Rango de Edad')
     plt.xticks(rotation=45)
     plt.tight_layout()
     plt.show()
 for var in variables:
-    graficar_variable(var)
+    graficar_variable_por_rango(var)
+
+#Consumo de alcohol en base al género y la edad
+consumo = df.groupby(["Rango de Edad", "Género"])["Consume Alcohol"].value_counts(normalize=True).rename("Proporción").reset_index()
+consumo_si = consumo[consumo["Consume Alcohol"] == "Sí"]
+plt.figure(figsize=(10, 6))
+sns.barplot(data=consumo_si, x="Rango de Edad", y="Proporción", hue="Género", palette="Set1")
+plt.title("Proporción de Consumo de Alcohol por Rango de Edad y Género")
+plt.ylabel("Proporción que consume alcohol")
+plt.xlabel("Rango de Edad")
+plt.ylim(0, 1)
+plt.legend(title="Género")
+plt.tight_layout()
+plt.show()
