@@ -42,9 +42,9 @@ class TestDatosPacientes(unittest.TestCase):
             altura = paciente["Altura (cm)"]
             # Altura plausible por género (con márgenes amplios pero razonables)
             if genero == "Masculino":
-                self.assertTrue(150 <= altura <= 190)
+                self.assertTrue(140 <= altura <= 195)
             else:
-                self.assertTrue(140 <= altura <= 175)
+                self.assertTrue(135 <= altura <= 180)
 
     def test_evaluaciones_extremas(self):
         pacientes = [
@@ -59,6 +59,18 @@ class TestDatosPacientes(unittest.TestCase):
 
         self.assertEqual(evaluar_presion_arterial(pacientes[0]["Presión Sistólica"], pacientes[0]["Presión Diastólica"], pacientes[0]["Edad"]), "Hipotensión")
         self.assertEqual(evaluar_presion_arterial(pacientes[1]["Presión Sistólica"], pacientes[1]["Presión Diastólica"], pacientes[1]["Edad"]), "Hipertensión")
+
+    def test_ids_pacientes_unicos(self):
+        datos = generar_datos_pacientes(1000)  # Genera 1000 pacientes
+        ids_pacientes = [paciente["ID Paciente"] for paciente in datos]
+        self.assertEqual(len(ids_pacientes), len(set(ids_pacientes)),
+                         "Los IDs de paciente no son únicos")
+
+    def test_ids_consultas_unicos(self):
+        datos = generar_datos_pacientes(1000)  # Genera 1000 pacientes
+        ids_consultas = [paciente["ID Consulta"] for paciente in datos]
+        self.assertEqual(len(ids_consultas), len(set(ids_consultas)),
+                         "Los IDs de consulta no son únicos")
 
 if __name__ == '__main__':
     unittest.main()

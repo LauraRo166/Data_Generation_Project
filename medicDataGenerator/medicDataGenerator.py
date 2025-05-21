@@ -3,6 +3,7 @@ import random
 from faker import Faker
 from datetime import datetime, timedelta
 import numpy as np
+import uuid
 
 fake = Faker('es_ES')
 
@@ -62,6 +63,7 @@ def generar_signos_vitales(edad, peso):
     if aumento_temp:
         fc = random.randint(fc_min + 10, fc_max + 10)
     elif baja_temp:
+
         fc = random.randint(fc_min - 10, fc_max - 10)
     else:
         fc = random.randint(fc_min, fc_max)
@@ -242,10 +244,34 @@ def asignar_consumo_alcohol(edad, genero):
 
     return "Sí" if random.random() < probabilidad else "No"
 
+def edad_ALL(n):
+    # Proporciones para cada pico
+    prop_pico1 = 0.6  # 60% en el primer pico (niños)
+    prop_pico2 = 0.4  # 40% en el segundo pico (adultos)
+
+    # Cantidades para cada pico
+    n1 = int(n * prop_pico1)
+    n2 = n - n1
+
+    # Distribución normal para cada pico
+    pico1 = np.random.normal(loc=3.5, scale=1.0, size=n1)   # pico en 2-5 años
+    pico2 = np.random.normal(loc=55, scale=5.0, size=n2)    # pico en 50-60 años
+
+    edades_bimodales = np.concatenate([pico1, pico2])
+
+    # Limitar los valores a rangos plausibles
+    edades_bimodales = np.clip(edades_bimodales, 0, 100)
+
+    np.random.shuffle(edades_bimodales)  # Mezclar
+
+    return edades_bimodales
+
 def generar_datos_pacientes(num=100):
     datos = []
 
-    for i in range(1, num + 1):
+    edades_diagnostico = edad_ALL(num)
+
+    for i in range(num):
         genero = random.choice(["Masculino", "Femenino"])
         edad = generar_edad()
 
@@ -261,14 +287,12 @@ def generar_datos_pacientes(num=100):
         fecha_consulta = fake.date_between(start_date='-6M', end_date='today')
         tipo_visita = random.choice(["Consulta general", "Control", "Urgencia", "Especialista"])
         proxima_cita = fecha_consulta + timedelta(days=random.randint(7, 60))
-
         temp, (sis, dias), fc, fr = generar_signos_vitales(edad, peso)
         tipo_sangre = random.choices(tipos_sangre, probabilidades)[0]
-
         fumador = asignar_fumador(edad, genero)
 
         datos.append({
-            "ID Paciente": f"P{i:05d}",
+            "ID Paciente": str(uuid.uuid4()),
             "Nombre": nombre,
             "Apellido": apellido,
             "Género": genero,
@@ -286,12 +310,12 @@ def generar_datos_pacientes(num=100):
             "Tipo de Sangre": tipo_sangre,
             "Fumador": fumador,
             "Consume Alcohol": asignar_consumo_alcohol(edad, genero),
-            "ID Consulta": f"C{i:05d}",
+            "Edad de diagnóstico ALL (años)": round(edades_diagnostico[i], 1),
+            "ID Consulta": str(uuid.uuid4()),
             "Fecha de Consulta": fecha_consulta.strftime('%Y-%m-%d'),
             "Tipo de Visita": tipo_visita,
             "Próxima Cita": proxima_cita.strftime('%Y-%m-%d')
         })
-
     return datos
 
 def guardar_en_csv(datos, nombre_archivo="consultas_pacientes.csv"):
@@ -304,6 +328,6 @@ def guardar_en_csv(datos, nombre_archivo="consultas_pacientes.csv"):
         escritor.writerows(datos)
 
 # Ejecutar
-datos_pacientes = generar_datos_pacientes(1000000)
+datos_pacientes = generar_datos_pacientes(100000)
 guardar_en_csv(datos_pacientes)
-print("Archivo CSV generado exitosamente con edad, peso y altura relacionados.")
+print("Archivo CSV generado exitosamente.")
